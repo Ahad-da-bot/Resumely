@@ -40,7 +40,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: "group toast group-[.toaster]:bg-paper group-[.toaster]:text-ink group-[.toaster]:border group-[.toaster]:border-ink/20 group-[.toaster]:shadow-[4px_4px_0_rgba(42,33,25,0.12)] font-serif rounded text-sm px-4 py-3",
           title: "font-serif font-bold text-sm text-ink",
-          description: "group-[.toast]:text-pencil font-sans text-xs mt-1",
+          description: "group-[.toast]:!text-ink/80 font-sans text-xs mt-1",
           actionButton: "group-[.toast]:bg-oxblood group-[.toast]:text-card font-sans text-xs font-bold px-3 py-1.5 rounded-sm",
           cancelButton: "group-[.toast]:bg-card group-[.toast]:text-ink font-sans text-xs border border-ink/20 px-3 py-1.5 rounded-sm",
           success: "group-[.toaster]:border-sage/40 group-[.toaster]:!text-sage",

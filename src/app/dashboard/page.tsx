@@ -66,8 +66,8 @@ export default async function DashboardPage() {
       <header className="border-b border-ink/10 bg-card/85 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded border border-ink/20 bg-oxblood text-card flex items-center justify-center font-serif font-bold text-sm shadow-[1px_2px_0_rgba(42,33,25,0.2)]">
-              R
+            <div className="w-8 h-8 rounded border border-ink/20 overflow-hidden shadow-[1px_2px_0_rgba(42,33,25,0.2)] flex items-center justify-center bg-card">
+              <img src="/logo.jpg" alt="Resumely Logo" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col">
               <span className="font-serif font-bold text-lg leading-tight tracking-tight text-ink">

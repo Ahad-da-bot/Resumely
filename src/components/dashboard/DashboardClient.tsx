@@ -48,6 +48,9 @@ export function DashboardClient({
   const [newFolderName, setNewFolderName] = React.useState('')
   const [isCreatingFolder, setIsCreatingFolder] = React.useState(false)
   const [showImportModal, setShowImportModal] = React.useState(false)
+  const [showCreatorNoteModal, setShowCreatorNoteModal] = React.useState(false)
+  const [creatorNote, setCreatorNote] = React.useState('')
+  const [isSubmittingNote, setIsSubmittingNote] = React.useState(false)
 
   const supabase = React.useMemo(() => createClient(), [])
 
@@ -146,6 +149,29 @@ export function DashboardClient({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to move resume'
       toast.error('Error moving resume', { description: message })
+    }
+  }
+
+  const handleSubmitCreatorNote = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!creatorNote.trim()) return
+
+    setIsSubmittingNote(true)
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: creatorNote }),
+      })
+      if (!res.ok) throw new Error('Failed to submit note')
+      
+      toast.success('Note sent!', { description: 'Thank you for your feedback.' })
+      setCreatorNote('')
+      setShowCreatorNoteModal(false)
+    } catch (err: unknown) {
+      toast.error('Failed to send note', { description: 'Please try again later.' })
+    } finally {
+      setIsSubmittingNote(false)
     }
   }
 
@@ -285,6 +311,30 @@ export function DashboardClient({
                 )}
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Contact Creator Widget */}
+        <Card className="border border-ink/15 bg-card text-ink shadow-[3px_4px_0_rgba(42,33,25,0.08)] rounded-md">
+          <CardHeader className="pb-2 border-b border-dashed border-ink/15">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-oxblood" />
+                <CardTitle className="font-serif text-sm font-bold text-ink">
+                  Feedback for Creator
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-3 text-xs">
+             <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreatorNoteModal(true)}
+                className="w-full bg-paper border-ink/20 text-ink hover:text-oxblood text-xs font-medium"
+              >
+                Leave a Note
+              </Button>
           </CardContent>
         </Card>
       </div>
@@ -485,6 +535,56 @@ export function DashboardClient({
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creator Note Modal */}
+      {showCreatorNoteModal && (
+        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-ink/20 rounded-md shadow-[6px_8px_0_rgba(42,33,25,0.15)] max-w-md w-full p-6 space-y-4 relative animate-in fade-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => setShowCreatorNoteModal(false)}
+              className="absolute top-4 right-4 text-pencil hover:text-ink"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div>
+              <h2 className="font-serif text-lg font-bold text-ink flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-oxblood" /> Note for the Creator
+              </h2>
+              <p className="text-xs text-pencil mt-1 leading-relaxed">
+                Send feedback, feature requests, or just a quick hello directly to the developer of this studio.
+              </p>
+            </div>
+            
+            <form onSubmit={handleSubmitCreatorNote} className="space-y-3 mt-4">
+              <textarea
+                value={creatorNote}
+                onChange={(e) => setCreatorNote(e.target.value)}
+                placeholder="What's on your mind?"
+                className="w-full h-32 p-3 text-xs bg-paper border border-ink/15 rounded focus:outline-none focus:border-oxblood focus:ring-1 focus:ring-oxblood resize-none"
+                required
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => setShowCreatorNoteModal(false)}
+                  className="h-8 text-xs px-3 text-pencil hover:text-ink"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmittingNote}
+                  className="h-8 text-xs px-4 bg-oxblood hover:bg-oxblood/90 text-card"
+                >
+                  {isSubmittingNote ? 'Sending...' : 'Send Note'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -168,8 +168,8 @@ function AuthForm() {
 
       <Card className="border border-ink/15 bg-card text-ink shadow-[4px_6px_0_rgba(42,33,25,0.1)] rounded-md">
         <CardHeader className="space-y-1.5 text-center pb-3">
-          <div className="mx-auto w-10 h-10 rounded border border-ink/20 bg-paper flex items-center justify-center text-oxblood mb-1 shadow-[1px_1px_0_rgba(42,33,25,0.15)]">
-            <FileText className="w-5 h-5" />
+          <div className="mx-auto w-10 h-10 rounded border border-ink/20 overflow-hidden shadow-[1px_1px_0_rgba(42,33,25,0.15)] flex items-center justify-center bg-card mb-1">
+            <img src="/logo.jpg" alt="Resumely Logo" className="w-full h-full object-cover" />
           </div>
           <CardTitle className="font-serif text-2xl font-bold tracking-tight text-ink">
             Studio Access

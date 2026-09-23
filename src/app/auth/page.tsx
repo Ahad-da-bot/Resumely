@@ -146,11 +146,20 @@ function AuthForm() {
         router.push('/onboarding')
         router.refresh()
       } else {
+        // Even if session is not immediately returned (e.g. if Supabase still has email confirmation on),
+        // we'll proceed to the onboarding or login. Ideally, Email Confirm is disabled in Supabase.
         toast.success('Account created!', {
-          description:
-            'Please verify your email or sign in to continue.',
+          description: 'Welcome to Resumely. Logging you in...',
         })
+        
+        // Optionally, attempt a manual sign in right after
+        await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        })
+        
         router.push('/onboarding')
+        router.refresh()
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred'

@@ -26,6 +26,8 @@ import {
   Filter,
   MoveRight,
   X,
+  Upload,
+  Loader2,
 } from 'lucide-react'
 
 interface DashboardClientProps {
@@ -51,6 +53,7 @@ export function DashboardClient({
   const [showCreatorNoteModal, setShowCreatorNoteModal] = React.useState(false)
   const [creatorNote, setCreatorNote] = React.useState('')
   const [isSubmittingNote, setIsSubmittingNote] = React.useState(false)
+  const [isUploading, setIsUploading] = React.useState(false)
 
   const supabase = React.useMemo(() => createClient(), [])
 
@@ -172,6 +175,52 @@ export function DashboardClient({
       toast.error('Failed to send note', { description: 'Please try again later.' })
     } finally {
       setIsSubmittingNote(false)
+    }
+  }
+
+  const handleDashboardUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('File too large', { description: 'Please upload a file smaller than 8MB.' })
+      return
+    }
+
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Invalid format', { description: 'Please upload a PDF or JPG file.' })
+      return
+    }
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        let errMsg = 'Failed to parse resume'
+        try {
+          const errData = await response.json()
+          if (errData.error) errMsg = errData.error
+        } catch (e) {}
+        throw new Error(errMsg)
+      }
+
+      const data = await response.json()
+      localStorage.setItem('resumeUploadCache', JSON.stringify(data))
+      router.push('/onboarding?step=1')
+    } catch (error) {
+      console.error('Error uploading resume:', error)
+      toast.error('Parse Error', { description: 'Failed to extract details.' })
+    } finally {
+      setIsUploading(false)
+      if (e.target) e.target.value = ''
     }
   }
 
@@ -363,6 +412,31 @@ export function DashboardClient({
                 Import Existing
               </Button>
             )}
+            
+            <div className="relative">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg"
+                onChange={handleDashboardUpload}
+                disabled={isUploading}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                title="Upload Resume to create a new Profile"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isUploading}
+                className="bg-card hover:bg-paper text-ink font-medium text-xs shadow-sm border border-ink/20 pointer-events-none"
+              >
+                {isUploading ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin text-oxblood" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 mr-1 text-oxblood" />
+                )}
+                {isUploading ? 'Parsing...' : 'Upload Resume'}
+              </Button>
+            </div>
+
             <Link href="/resumes/new">
               <Button
                 size="sm"

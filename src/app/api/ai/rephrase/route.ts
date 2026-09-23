@@ -98,7 +98,7 @@ Your goal is to rephrase resume bullet points into punchy, metric-driven achieve
 Always provide exactly 3 distinct, compelling options with a brief rationale and estimated impact score.`
 
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-3.5-flash'),
       schema: responseSchema,
       system: systemPrompt,
       prompt: `Original Bullet Point: "${text}"\n\nTask: ${instruction}`,

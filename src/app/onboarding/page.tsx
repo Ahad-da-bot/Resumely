@@ -45,8 +45,9 @@ import {
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4 | 5>(1)
+  const [currentStep, setCurrentStep] = React.useState<0 | 1 | 2 | 3 | 4 | 5>(0)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [isUploading, setIsUploading] = React.useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = React.useState(true)
   const [userId, setUserId] = React.useState<string | null>(null)
 
@@ -176,6 +177,50 @@ export default function OnboardingPage() {
             setSkills(profile.primary_skills)
           }
         }
+
+        // Check for dashboard upload cache
+        const cached = localStorage.getItem('resumeUploadCache')
+        if (cached) {
+          try {
+            const data = JSON.parse(cached)
+            if (data.fullName) setFullName(data.fullName)
+            if (data.title) setTitle(data.title)
+            if (data.phone) setPhone(data.phone)
+            if (data.location) setLocation(data.location)
+            if (data.websiteUrl) setWebsiteUrl(data.websiteUrl)
+            if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl)
+            if (data.summary) setSummary(data.summary)
+            if (data.experiences && data.experiences.length > 0) {
+              setExperiences(data.experiences.map((exp: any, i: number) => ({
+                id: String(Date.now() + i),
+                company: exp.company || '',
+                role: exp.role || '',
+                location: exp.location || '',
+                start_date: exp.start_date || '',
+                end_date: exp.end_date || '',
+                current: exp.end_date?.toLowerCase() === 'present',
+                bullets: exp.bullets || [],
+              })))
+            }
+            if (data.education && data.education.length > 0) {
+              setEducationList(data.education.map((edu: any, i: number) => ({
+                id: String(Date.now() + i),
+                school: edu.school || '',
+                degree: edu.degree || '',
+                field_of_study: edu.field_of_study || '',
+                start_date: edu.start_date || '',
+                end_date: edu.end_date || '',
+                bullets: edu.bullets || [],
+              })))
+            }
+            if (data.skills && data.skills.length > 0) {
+              setSkills(data.skills)
+            }
+            localStorage.removeItem('resumeUploadCache')
+            setCurrentStep(1) // Jump straight to step 1
+            toast.success('Resume Parsed', { description: 'Please review your extracted details.' })
+          } catch (e) {}
+        }
       } catch {
         // Fallback
       } finally {
@@ -185,6 +230,91 @@ export default function OnboardingPage() {
 
     loadUserData()
   }, [supabase, router])
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('File too large', { description: 'Please upload a file smaller than 8MB.' })
+      return
+    }
+
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Invalid format', { description: 'Please upload a PDF or JPG file.' })
+      return
+    }
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        let errMsg = 'Failed to parse resume'
+        try {
+          const errData = await response.json()
+          if (errData.error) errMsg = errData.error
+        } catch (e) {}
+        throw new Error(errMsg)
+      }
+
+      const data = await response.json()
+
+      // Populate state
+      if (data.fullName) setFullName(data.fullName)
+      if (data.title) setTitle(data.title)
+      if (data.phone) setPhone(data.phone)
+      if (data.location) setLocation(data.location)
+      if (data.websiteUrl) setWebsiteUrl(data.websiteUrl)
+      if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl)
+      if (data.summary) setSummary(data.summary)
+      
+      if (data.experiences && data.experiences.length > 0) {
+        setExperiences(data.experiences.map((exp: any, i: number) => ({
+          id: String(Date.now() + i),
+          company: exp.company || '',
+          role: exp.role || '',
+          location: exp.location || '',
+          start_date: exp.start_date || '',
+          end_date: exp.end_date || '',
+          current: exp.end_date?.toLowerCase() === 'present',
+          bullets: exp.bullets || [],
+        })))
+      }
+
+      if (data.education && data.education.length > 0) {
+        setEducationList(data.education.map((edu: any, i: number) => ({
+          id: String(Date.now() + i),
+          school: edu.school || '',
+          degree: edu.degree || '',
+          field_of_study: edu.field_of_study || '',
+          start_date: edu.start_date || '',
+          end_date: edu.end_date || '',
+          bullets: edu.bullets || [],
+        })))
+      }
+
+      if (data.skills && data.skills.length > 0) {
+        setSkills(data.skills)
+      }
+
+      toast.success('Resume Parsed', { description: 'Please review your extracted details.' })
+      setCurrentStep(1)
+    } catch (error) {
+      console.error('Error uploading resume:', error)
+      toast.error('Parse Error', { description: 'Failed to extract details. You can continue manually.' })
+    } finally {
+      setIsUploading(false)
+      if (e.target) e.target.value = '' // reset input
+    }
+  }
 
   const handleAddSkill = () => {
     if (!skillInput.trim()) return
@@ -382,6 +512,72 @@ export default function OnboardingPage() {
           <div className="tape" />
 
           <Card className="border border-ink/15 bg-card text-ink shadow-[4px_6px_0_rgba(42,33,25,0.1)] rounded-md">
+            {/* PHASE 0: UPLOAD OR MANUAL */}
+            {currentStep === 0 && (
+              <>
+                <CardHeader className="pb-3 border-b border-dashed border-ink/10">
+                  <CardTitle className="font-serif text-lg font-bold flex items-center gap-2 text-ink">
+                    <Sparkles className="w-4 h-4 text-oxblood" />
+                    Welcome to Studio
+                  </CardTitle>
+                  <CardDescription className="text-pencil text-xs font-normal">
+                    How would you like to build your master profile?
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-6 pt-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div 
+                      className="border-2 border-dashed border-ink/20 rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-3 hover:border-oxblood/50 hover:bg-oxblood/5 transition-colors cursor-pointer relative"
+                    >
+                      <input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg"
+                        onChange={handleFileUpload}
+                        disabled={isUploading}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-8 h-8 text-oxblood animate-spin" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-ink">Analyzing Resume...</p>
+                            <p className="text-xs text-pencil">Extracting your career data with AI</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 bg-paper rounded-full flex items-center justify-center border border-ink/10 shadow-sm">
+                            <FileText className="w-6 h-6 text-oxblood" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-ink">Upload Existing Resume</p>
+                            <p className="text-xs text-pencil">PDF or JPG (Max 8MB)</p>
+                          </div>
+                          <Badge variant="secondary" className="bg-oxblood/10 text-oxblood hover:bg-oxblood/20 border-none font-serif text-[10px]">
+                            AI Powered
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+
+                    <div 
+                      onClick={() => !isUploading && setCurrentStep(1)}
+                      className={`border border-ink/15 rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-3 bg-paper/50 hover:bg-paper transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className="w-12 h-12 bg-card rounded-full flex items-center justify-center border border-ink/10 shadow-sm">
+                        <User className="w-6 h-6 text-pencil" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-ink">Start from Scratch</p>
+                        <p className="text-xs text-pencil">Fill out your profile manually</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </>
+            )}
+
             {/* PHASE 1: COORDINATES */}
             {currentStep === 1 && (
               <>

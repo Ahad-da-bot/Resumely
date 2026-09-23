@@ -44,6 +44,7 @@ interface ResumeStoreState {
     website_url?: string
     linkedin_url?: string
     professional_summary?: string
+    email?: string
   }) => void
 
   // Work Experience

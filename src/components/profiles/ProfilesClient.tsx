@@ -406,8 +406,8 @@ export function ProfilesClient({ initialProfiles, userId }: ProfilesClientProps)
                             {activeAIExperienceId === exp.id && activeAIBulletIndex === bIdx && (
                               <InlineAIRewriter 
                                 currentText={bullet}
-                                onAccept={(t) => { updateBullet(exp.id, bIdx, t); setActiveAIExperienceId(null); setActiveAIBulletIndex(null); }}
-                                onCancel={() => { setActiveAIExperienceId(null); setActiveAIBulletIndex(null); }}
+                                onApply={(t: string) => { updateBullet(exp.id, bIdx, t); setActiveAIExperienceId(null); setActiveAIBulletIndex(null); }}
+                                onClose={() => { setActiveAIExperienceId(null); setActiveAIBulletIndex(null); }}
                               />
                             )}
                           </div>

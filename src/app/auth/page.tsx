@@ -417,31 +417,31 @@ export default function AuthPage() {
     <main className="min-h-screen w-full ruled-bg flex items-center justify-center p-4 md:p-8 text-ink relative">
       <div className="w-full max-w-5xl grid lg:grid-cols-12 gap-8 items-center z-10">
         {/* Left Side: Editorial Vignette */}
-        <div className="lg:col-span-6 space-y-6 text-left hidden lg:block pr-6">
+        <div className="lg:col-span-6 space-y-4 lg:space-y-6 text-left pr-0 lg:pr-6 mb-6 lg:mb-0">
           <div className="inline-block">
             <span className="label-hand">a proposal, and honestly, a bit of a diary</span>
           </div>
 
-          <div className="space-y-3">
-            <h1 className="font-serif text-3xl xl:text-4xl font-semibold leading-[1.1] tracking-tight text-ink">
+          <div className="space-y-2 lg:space-y-3">
+            <h1 className="font-serif text-2xl lg:text-3xl xl:text-4xl font-semibold leading-[1.1] tracking-tight text-ink">
               Every career has a story. Most resumes lose it in the margins.
             </h1>
-            <p className="lede text-sm leading-relaxed text-pencil">
+            <p className="lede text-xs lg:text-sm leading-relaxed text-pencil">
               Resumely brings craftsman typography, structured master profiles, and precision AI targeting together. You write your truth once; we build the bespoke resumes to match the room.
             </p>
           </div>
 
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-3 text-xs text-pencil">
-              <span className="text-oxblood font-bold">✎</span>
+          <div className="space-y-2 lg:space-y-3 pt-1 lg:pt-2">
+            <div className="flex items-start lg:items-center gap-3 text-xs text-pencil">
+              <span className="text-oxblood font-bold mt-0.5 lg:mt-0">✎</span>
               <span>Single Master Dossier syncs directly across all resume variants</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-pencil">
-              <span className="text-oxblood font-bold">✎</span>
+            <div className="flex items-start lg:items-center gap-3 text-xs text-pencil">
+              <span className="text-oxblood font-bold mt-0.5 lg:mt-0">✎</span>
               <span>Client-side PDF compiler with zero awkward layout shifts</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-pencil">
-              <span className="text-oxblood font-bold">✎</span>
+            <div className="flex items-start lg:items-center gap-3 text-xs text-pencil">
+              <span className="text-oxblood font-bold mt-0.5 lg:mt-0">✎</span>
               <span>Supabase auth with seamless session refreshing & row-level security</span>
             </div>
           </div>

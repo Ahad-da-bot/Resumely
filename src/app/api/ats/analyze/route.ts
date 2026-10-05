@@ -60,7 +60,7 @@ Evaluate if the resume contains these keywords and concepts.
 Return a realistic ATS match score (0-100), a list of missing critical keywords, a list of successfully matched keywords, and 3 actionable suggestions to improve the resume.`
 
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-3.5-flash'),
       schema: responseSchema,
       system: systemPrompt,
       prompt: `==== JOB DESCRIPTION ====\n${jobDescription}\n\n==== RESUME CONTENT ====\n${resumeContent}\n\nPerform the ATS analysis now.`,

@@ -127,9 +127,21 @@ export default function OnboardingPage() {
   const [selectedTemplate, setSelectedTemplate] = React.useState<TemplateId>('craftsman')
 
   const supabase = React.useMemo(() => createClient(), [])
+  const cachedData = React.useRef<any>(null)
+  const cacheProcessed = React.useRef(false)
 
   // Load existing profile if available
   React.useEffect(() => {
+    if (!cachedData.current) {
+      const cached = localStorage.getItem('resumeUploadCache')
+      if (cached) {
+        try {
+          cachedData.current = JSON.parse(cached)
+          localStorage.removeItem('resumeUploadCache')
+        } catch (e) {}
+      }
+    }
+
     async function loadUserData() {
       try {
         const {
@@ -179,10 +191,9 @@ export default function OnboardingPage() {
         }
 
         // Check for dashboard upload cache
-        const cached = localStorage.getItem('resumeUploadCache')
-        if (cached) {
+        if (cachedData.current) {
           try {
-            const data = JSON.parse(cached)
+            const data = cachedData.current
             if (data.fullName) setFullName(data.fullName)
             if (data.title) setTitle(data.title)
             if (data.phone) setPhone(data.phone)
@@ -216,9 +227,11 @@ export default function OnboardingPage() {
             if (data.skills && data.skills.length > 0) {
               setSkills(data.skills)
             }
-            localStorage.removeItem('resumeUploadCache')
             setCurrentStep(1) // Jump straight to step 1
-            toast.success('Resume Parsed', { description: 'Please review your extracted details.' })
+            if (!cacheProcessed.current) {
+              toast.success('Resume Parsed', { description: 'Please review your extracted details.' })
+              cacheProcessed.current = true
+            }
           } catch (e) {}
         }
       } catch {

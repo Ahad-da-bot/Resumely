@@ -39,8 +39,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Protect /dashboard and /onboarding routes
-  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')) && !user) {
+  // Protect authenticated routes
+  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding') || pathname.startsWith('/resumes') || pathname.startsWith('/profiles')) && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth'
     url.searchParams.set('redirectedFrom', pathname)

@@ -19,6 +19,7 @@ export function TechLinearTemplate({ profile, styleConfig }: TemplateProps) {
     updateEducation,
     updateEducationBullet,
     updateProject,
+    updateProjectBulletPoint,
     updateAchievement,
   } = useResumeStore()
 
@@ -110,7 +111,7 @@ export function TechLinearTemplate({ profile, styleConfig }: TemplateProps) {
               {"// PROJECTS"}
             </div>
             <div className="space-y-2">
-              {profile.projects.map((proj) => (
+              {Array.from(new Map(profile.projects.map(p => [p.id, p])).values()).map((proj) => (
                 <div key={proj.id} className="p-2.5 rounded bg-white border border-slate-200 space-y-0.5 shadow-2xs">
                   <InlineEditableText
                     value={proj.title}
@@ -123,6 +124,21 @@ export function TechLinearTemplate({ profile, styleConfig }: TemplateProps) {
                     onSave={(val) => updateProject(proj.id, { description: val })}
                     className="text-slate-600 text-[11px] block font-sans"
                   />
+                  {proj.bullets && proj.bullets.length > 0 && (
+                    <ul className="space-y-0.5 pl-1 text-slate-700 text-[11px] font-sans">
+                      {proj.bullets.map((bullet, bIdx) => (
+                        <li key={bIdx} className="flex items-start gap-1.5">
+                          <span className="text-indigo-600 font-mono select-none font-bold">&gt;</span>
+                          <InlineEditableText
+                            value={bullet}
+                            multiline
+                            onSave={(val) => updateProjectBulletPoint(proj.id, bIdx, val)}
+                            className="leading-tight flex-1"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {proj.technologies && proj.technologies.length > 0 && (
                     <div className="text-[9px] text-indigo-700 font-mono">
                       tech: {proj.technologies.join(', ')}

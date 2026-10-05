@@ -162,7 +162,8 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
   }
 
   // Wrap strings with simple div so react-pdf-html parses them properly
-  const renderHtml = (htmlString: string, baseStyle: any) => {
+  const renderHtml = (htmlString: string | undefined, baseStyle: any) => {
+    if (!htmlString || htmlString.trim() === '') return null
     return (
       <Html stylesheet={{ ...htmlStylesheet, div: baseStyle }}>
         {`<div>${htmlString}</div>`}
@@ -175,7 +176,9 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
       case 'summary':
         return profile.professional_summary ? (
           <View key="summary" style={styles.section}>
-            <Text style={styles.sectionTitle}>Professional Summary</Text>
+            <Text style={styles.sectionTitle}>
+              {templateId === 'craftsman' ? 'Executive Summary' : 'Professional Summary'}
+            </Text>
             {renderHtml(profile.professional_summary, styles.summaryText)}
           </View>
         ) : null
@@ -183,8 +186,10 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
       case 'experience':
         return profile.work_experience && profile.work_experience.length > 0 ? (
           <View key="experience" style={styles.section}>
-            <Text style={styles.sectionTitle}>Experience</Text>
-            {profile.work_experience.map((exp) => {
+            <Text style={styles.sectionTitle}>
+              {templateId === 'craftsman' ? 'Professional Experience' : 'Experience'}
+            </Text>
+            {Array.from(new Map(profile.work_experience.map(e => [e.id, e])).values()).map((exp) => {
               const companyText = exp.company ? ` — ${exp.company}` : ''
               const locationText = exp.location ? ` (${exp.location})` : ''
               const hasRole = Boolean(exp.role)
@@ -225,17 +230,35 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
       case 'projects':
         return profile.projects && profile.projects.length > 0 ? (
           <View key="projects" style={styles.section}>
-            <Text style={styles.sectionTitle}>Key Projects</Text>
-            {profile.projects.map((proj) => (
-              <View key={proj.id} style={styles.itemRow}>
-                <Text style={styles.role}>{proj.title}</Text>
-                {proj.description && (
-                  <View style={{ marginTop: 2 }}>
-                    {renderHtml(proj.description, styles.summaryText)}
-                  </View>
-                )}
-              </View>
-            ))}
+            <Text style={styles.sectionTitle}>
+              {templateId === 'craftsman' ? 'Key Projects & Systems' : 'Key Projects'}
+            </Text>
+            <View style={{ flexDirection: 'column' }}>
+              {Array.from(new Map(profile.projects.map(p => [p.id, p])).values()).map((proj) => (
+                <View key={proj.id} style={{ ...styles.itemRow, marginBottom: 10 }}>
+                  <Text style={styles.role}>{proj.title}</Text>
+                  {proj.description && (
+                    <View style={{ marginTop: 2 }}>
+                      {renderHtml(proj.description, styles.summaryText)}
+                    </View>
+                  )}
+                  {proj.bullets && proj.bullets.length > 0 &&
+                    proj.bullets.map((bullet, idx) => (
+                      <View key={idx} style={styles.bulletRow}>
+                        <Text style={styles.bulletDot}>•</Text>
+                        <View style={{ flex: 1 }}>
+                          {renderHtml(bullet, styles.bulletText)}
+                        </View>
+                      </View>
+                    ))}
+                  {proj.technologies && proj.technologies.length > 0 && (
+                    <Text style={{ fontSize: 8, color: '#5E6E4F', fontFamily: templateId === 'tech-mono' ? 'Courier' : fontFamily, marginTop: 3 }}>
+                      {proj.technologies.join(' · ')}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
           </View>
         ) : null
 
@@ -243,7 +266,7 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
         return profile.education && profile.education.length > 0 ? (
           <View key="education" style={styles.section}>
             <Text style={styles.sectionTitle}>Education & Academic Honors</Text>
-            {profile.education.map((edu) => {
+            {Array.from(new Map(profile.education.map(e => [e.id, e])).values()).map((edu) => {
               const degreeParts = [edu.degree, edu.field_of_study].filter(Boolean)
               const degreeText = degreeParts.join(' in ')
               const schoolText = edu.school ? (degreeText ? ` — ${edu.school}` : edu.school) : ''
@@ -278,7 +301,9 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
       case 'skills':
         return profile.primary_skills && profile.primary_skills.length > 0 ? (
           <View key="skills" style={styles.section}>
-            <Text style={styles.sectionTitle}>Key Competencies & Skills</Text>
+            <Text style={styles.sectionTitle}>
+              {templateId === 'craftsman' ? 'Core Competencies' : 'Key Competencies & Skills'}
+            </Text>
             <Text style={styles.skillsText}>{profile.primary_skills.join('  •  ')}</Text>
           </View>
         ) : null
@@ -287,7 +312,7 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
         return profile.achievements && profile.achievements.length > 0 ? (
           <View key="achievements" style={styles.section}>
             <Text style={styles.sectionTitle}>Honors & Achievements</Text>
-            {profile.achievements.map((ach) => {
+            {Array.from(new Map(profile.achievements.map(a => [a.id, a])).values()).map((ach) => {
               const issuerText = ach.issuer ? ` — ${ach.issuer}` : ''
               return (
                 <View key={ach.id} style={styles.itemRow}>
@@ -324,7 +349,7 @@ export function ResumePDFDocument({ profile, templateId, styleConfig }: ResumePD
           </View>
         </View>
 
-        {sectionOrder.map((key) => {
+        {Array.from(new Set(sectionOrder)).map((key) => {
           if (styleConfig?.hidden_sections?.includes(key)) return null
           return renderSection(key)
         })}

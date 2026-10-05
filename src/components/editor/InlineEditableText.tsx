@@ -31,14 +31,38 @@ export function InlineEditableText({
     }
   }, [value, isFocused])
 
+  const stripHtml = (html: string): string => {
+    // Replace <br> and block-level tags with newlines, then strip remaining tags
+    const withBreaks = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/?(p|div|li)[^>]*>/gi, '\n')
+    // Strip all remaining HTML tags
+    const text = withBreaks.replace(/<[^>]*>/g, '')
+    // Decode common HTML entities
+    const decoded = text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&ldquo;/g, '\u201C')
+      .replace(/&rdquo;/g, '\u201D')
+      .replace(/&nbsp;/g, ' ')
+    // Collapse multiple newlines and trim
+    return decoded.replace(/\n{2,}/g, '\n').trim()
+  }
+
   const handleBlur = (e: React.FocusEvent<HTMLElement>) => {
     setIsFocused(false)
-    const newHtml = e.currentTarget.innerHTML.trim()
+    const rawHtml = e.currentTarget.innerHTML.trim()
     // Don't save if it's just an empty br
-    if (newHtml === '<br>') {
+    if (rawHtml === '<br>') {
       onSave('')
-    } else if (newHtml !== value) {
-      onSave(newHtml)
+    } else {
+      const cleanText = stripHtml(rawHtml)
+      if (cleanText !== value) {
+        onSave(cleanText)
+      }
     }
   }
 

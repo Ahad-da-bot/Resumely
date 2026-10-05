@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import pdfParse from 'pdf-parse-new'
+import { createClient } from '@/lib/supabase/server'
 
 const responseSchema = z.object({
   fullName: z.string().default(''),
@@ -35,8 +36,19 @@ const responseSchema = z.object({
   skills: z.array(z.string()).default([]),
 })
 
+type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image'; image: Buffer }
+
 export async function POST(req: NextRequest) {
   try {
+    // Auth guard — prevent unauthenticated API quota abuse
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
 
@@ -62,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
 
-    let aiContent: any[] = [
+    const aiContent: ContentPart[] = [
       { type: 'text', text: 'Extract the resume details into the provided structured schema. Be accurate and pull out all relevant information. For titles, use a clear target job title based on their experience if one is not explicitly stated at the top.' }
     ]
 
@@ -85,8 +97,9 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(object)
-  } catch (error: any) {
-    console.error('Error parsing resume:', error?.message || error, error?.stack)
-    return NextResponse.json({ error: error?.message || 'Failed to parse resume' }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to parse resume'
+    console.error('Error parsing resume:', message, error)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

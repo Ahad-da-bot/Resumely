@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const requestSchema = z.object({
   text: z.string().min(1, 'Text is required'),
@@ -23,6 +24,13 @@ const responseSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth guard — prevent unauthenticated API quota abuse
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const parsed = requestSchema.safeParse(body)
 

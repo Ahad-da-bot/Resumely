@@ -93,21 +93,28 @@ export function ResumeEditorClient({
     addWorkExperience,
     updateWorkExperience,
     removeWorkExperience,
+    moveWorkExperience,
     updateBulletPoint,
     addBulletPoint,
     removeBulletPoint,
     addEducation,
     updateEducation,
     removeEducation,
+    moveEducation,
     addEducationBullet,
     updateEducationBullet,
     removeEducationBullet,
     addProject,
     updateProject,
     removeProject,
+    moveProject,
+    addProjectBullet,
+    updateProjectBulletPoint,
+    removeProjectBullet,
     addAchievement,
     updateAchievement,
     removeAchievement,
+    moveAchievement,
     addSkill,
     removeSkill,
   } = useResumeStore()
@@ -125,7 +132,16 @@ export function ResumeEditorClient({
   const [isClientReady, setIsClientReady] = React.useState(false)
   const [isRibbonVisible, setIsRibbonVisible] = React.useState(false)
   const [deepAtsLoading, setDeepAtsLoading] = React.useState(false)
-  const [deepAtsReport, setDeepAtsReport] = React.useState<{score: number, missingKeywords: string[], matchingKeywords: string[], suggestions: string[]} | null>(null)
+  const [deepAtsReport, setDeepAtsReport] = React.useState<{score: number, missingKeywords: string[], matchingKeywords: string[], suggestions: string[]} | null>(() => {
+    // Restore persisted ATS report from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(`resumely_ats_${resumeId}`)
+        if (cached) return JSON.parse(cached)
+      } catch {}
+    }
+    return null
+  })
 
   const supabase = React.useMemo(() => createClient(), [])
 
@@ -268,8 +284,12 @@ export function ResumeEditorClient({
         activeProfile.title,
         activeProfile.professional_summary,
         ...(activeProfile.primary_skills || []),
-        ...(activeProfile.work_experience || []).flatMap((e) => [e.role, ...(e.bullets || [])]),
-      ].join(' ')
+        ...(activeProfile.work_experience || []).flatMap((e) => [e.role, e.company, ...(e.bullets || [])]),
+        ...(activeProfile.education || []).flatMap((e) => [e.degree, e.field_of_study, e.school, ...(e.bullets || [])]),
+        ...(activeProfile.projects || []).flatMap((p) => [p.title, p.description, ...(p.technologies || []), ...(p.bullets || [])]),
+        ...(activeProfile.achievements || []).flatMap((a) => [a.title, a.issuer, a.description || '']),
+        ...(activeProfile.certifications || []).map((c) => c.name),
+      ].filter(Boolean).join(' ')
 
       const res = await fetch('/api/ats/analyze', {
         method: 'POST',
@@ -280,6 +300,10 @@ export function ResumeEditorClient({
       const data = await res.json()
       setDeepAtsReport(data)
       setAtsScore(data.score)
+      // Persist ATS report to localStorage
+      try {
+        localStorage.setItem(`resumely_ats_${resumeId}`, JSON.stringify(data))
+      } catch {}
     } catch (err) {
       toast.error('Deep ATS failed')
     } finally {
@@ -513,7 +537,7 @@ export function ResumeEditorClient({
       id: crypto.randomUUID(),
       title: 'New High-Impact Project',
       description: 'Engineered a scalable distributed system with real-time analytics.',
-      technologies: ['TypeScript', 'Next.js'],
+      technologies: [],
       bullets: [],
     }
     addProject(newProj)
@@ -717,6 +741,37 @@ export function ResumeEditorClient({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-pencil">LinkedIn URL</Label>
+                    <Input
+                      value={activeProfile.linkedin_url || ''}
+                      onChange={(e) => updateBasicInfo({ linkedin_url: e.target.value })}
+                      placeholder="https://linkedin.com/in/..."
+                      className="h-8 text-xs bg-paper/60 border-ink/15"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-pencil">GitHub / Website</Label>
+                    <Input
+                      value={activeProfile.website_url || ''}
+                      onChange={(e) => updateBasicInfo({ website_url: e.target.value })}
+                      placeholder="https://github.com/..."
+                      className="h-8 text-xs bg-paper/60 border-ink/15"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-pencil">Email Address</Label>
+                  <Input
+                    value={activeProfile.email || ''}
+                    onChange={(e) => updateBasicInfo({ email: e.target.value })}
+                    placeholder="your@email.com"
+                    className="h-8 text-xs bg-paper/60 border-ink/15"
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <Label className="text-[11px] text-pencil">Professional Summary</Label>
                   <Textarea
@@ -748,15 +803,33 @@ export function ResumeEditorClient({
                 <div className="space-y-4">
                   {(activeProfile.work_experience || []).map((exp) => (
                     <div key={exp.id} className="p-3 rounded bg-paper/60 border border-ink/15 space-y-2.5 relative">
-                      <button
-                        type="button"
-                        onClick={() => removeWorkExperience(exp.id)}
-                        className="absolute top-2 right-2 text-pencil hover:text-oxblood"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveWorkExperience(exp.id, 'up')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveWorkExperience(exp.id, 'down')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeWorkExperience(exp.id)}
+                          className="text-pencil hover:text-oxblood p-1 ml-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-20">
                         <Input
                           value={exp.role || ''}
                           onChange={(e) => updateWorkExperience(exp.id, { role: e.target.value })}
@@ -880,15 +953,33 @@ export function ResumeEditorClient({
                 <div className="space-y-3">
                   {(activeProfile.education || []).map((edu) => (
                     <div key={edu.id} className="p-3 rounded bg-paper/60 border border-ink/15 space-y-2 relative">
-                      <button
-                        type="button"
-                        onClick={() => removeEducation(edu.id)}
-                        className="absolute top-2 right-2 text-pencil hover:text-oxblood"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveEducation(edu.id, 'up')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveEducation(edu.id, 'down')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeEducation(edu.id)}
+                          className="text-pencil hover:text-oxblood p-1 ml-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-20">
                         <Input
                           value={edu.degree || ''}
                           onChange={(e) => updateEducation(edu.id, { degree: e.target.value })}
@@ -977,27 +1068,93 @@ export function ResumeEditorClient({
 
                 <div className="space-y-3">
                   {(activeProfile.projects || []).map((proj) => (
-                    <div key={proj.id} className="p-3 rounded bg-paper/60 border border-ink/15 space-y-2 relative">
-                      <button
-                        type="button"
-                        onClick={() => removeProject(proj.id)}
-                        className="absolute top-2 right-2 text-pencil hover:text-oxblood"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div key={proj.id} className="p-3 rounded bg-paper/60 border border-ink/15 space-y-2.5 relative">
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveProject(proj.id, 'up')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveProject(proj.id, 'down')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeProject(proj.id)}
+                          className="text-pencil hover:text-oxblood p-1 ml-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-20">
+                        <Input
+                          value={proj.title || ''}
+                          onChange={(e) => updateProject(proj.id, { title: e.target.value })}
+                          placeholder="Project Title"
+                          className="h-7 text-xs bg-card font-bold border-ink/15"
+                        />
+                        <Input
+                          value={proj.link || ''}
+                          onChange={(e) => updateProject(proj.id, { link: e.target.value })}
+                          placeholder="Live URL / GitHub (optional)"
+                          className="h-7 text-xs bg-card border-ink/15 text-pencil"
+                        />
+                      </div>
+
                       <Input
-                        value={proj.title || ''}
-                        onChange={(e) => updateProject(proj.id, { title: e.target.value })}
-                        placeholder="Project Title"
-                        className="h-7 text-xs bg-card font-bold pr-6"
+                        value={(proj.technologies || []).join(', ')}
+                        onChange={(e) => updateProject(proj.id, { technologies: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                        placeholder="Technologies (comma separated, e.g. Next.js, Supabase)"
+                        className="h-7 text-xs bg-card text-sage border-ink/15"
                       />
+
                       <Textarea
                         rows={2}
                         value={proj.description || ''}
                         onChange={(e) => updateProject(proj.id, { description: e.target.value })}
                         placeholder="Project impact description..."
-                        className="text-xs bg-card"
+                        className="text-xs bg-card border-ink/15"
                       />
+
+                      {/* Project Bullets */}
+                      <div className="space-y-1.5 pt-1 border-t border-dashed border-ink/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-pencil">Key Outcomes:</span>
+                          <button
+                            type="button"
+                            onClick={() => addProjectBullet(proj.id, 'Delivered measurable impact...')}
+                            className="text-[10px] font-mono text-oxblood hover:underline"
+                          >
+                            + Bullet
+                          </button>
+                        </div>
+                        {(proj.bullets || []).map((bullet, bIdx) => (
+                          <div key={bIdx} className="flex items-center gap-1">
+                            <Input
+                              value={bullet || ''}
+                              onChange={(e) => updateProjectBulletPoint(proj.id, bIdx, e.target.value)}
+                              placeholder="e.g. Reduced load time by 40% via caching strategy"
+                              className="text-xs bg-card border-ink/15 h-7 flex-1"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeProjectBullet(proj.id, bIdx)}
+                              className="text-pencil hover:text-oxblood p-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1023,14 +1180,32 @@ export function ResumeEditorClient({
                 <div className="space-y-3">
                   {(activeProfile.achievements || []).map((ach) => (
                     <div key={ach.id} className="p-3 rounded bg-paper/60 border border-ink/15 space-y-2 relative">
-                      <button
-                        type="button"
-                        onClick={() => removeAchievement(ach.id)}
-                        className="absolute top-2 right-2 text-pencil hover:text-oxblood"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveAchievement(ach.id, 'up')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveAchievement(ach.id, 'down')}
+                          className="text-pencil hover:text-ink p-1"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeAchievement(ach.id)}
+                          className="text-pencil hover:text-oxblood p-1 ml-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-20">
                         <Input
                           value={ach.title || ''}
                           onChange={(e) => updateAchievement(ach.id, { title: e.target.value })}

@@ -426,15 +426,7 @@ export default function AuthPage() {
     <main className="min-h-screen w-full ruled-bg flex flex-col lg:flex-row items-center justify-center p-4 md:p-8 text-ink relative">
       <div className="w-full max-w-5xl flex flex-col lg:grid lg:grid-cols-12 gap-8 items-center z-10">
         
-        {/* --- MOBILE: Title & Note (First) --- */}
-        <div className="lg:hidden space-y-4 text-center mt-4">
-          <div className="inline-block">
-            <span className="label-hand">a proposal, and honestly, a bit of a diary</span>
-          </div>
-          <h1 className="font-serif text-3xl font-semibold leading-[1.1] tracking-tight text-ink">
-            Every career has a story. Most resumes lose it in the margins.
-          </h1>
-        </div>
+        {/* Mobile content has been moved below the Auth Card */}
 
         {/* --- DESKTOP: Full Editorial Vignette (Left Side) --- */}
         <div className="lg:col-span-6 space-y-6 text-left hidden lg:block pr-6">
@@ -481,7 +473,16 @@ export default function AuthPage() {
         </div>
 
         {/* --- MOBILE: Overview Summary & Bullets (Last) --- */}
-        <div className="lg:hidden space-y-4 text-left bg-card/60 border border-ink/10 rounded-md p-5 shadow-sm">
+        <div className="lg:hidden space-y-4 text-left bg-card border border-ink/10 rounded-md p-5 shadow-[4px_6px_0_rgba(42,33,25,0.1)] mt-8">
+          <div className="space-y-3 mb-4 border-b border-ink/10 pb-4">
+            <div className="inline-block">
+              <span className="label-hand">a proposal, and honestly, a bit of a diary</span>
+            </div>
+            <h1 className="font-serif text-2xl font-semibold leading-[1.1] tracking-tight text-ink">
+              Every career has a story. Most resumes lose it in the margins.
+            </h1>
+          </div>
+
           <p className="lede text-sm leading-relaxed text-ink font-medium">
             Resumely brings craftsman typography, structured master profiles, and precision AI targeting together. You write your truth once; we build the bespoke resumes to match the room.
           </p>

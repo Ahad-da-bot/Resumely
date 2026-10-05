@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 
 const requestSchema = z.object({
   resumeContent: z.string().min(1, 'Resume content is required'),
@@ -17,6 +18,13 @@ const responseSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth guard — prevent unauthenticated API quota abuse
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const parsed = requestSchema.safeParse(body)
 
@@ -52,7 +60,7 @@ Evaluate if the resume contains these keywords and concepts.
 Return a realistic ATS match score (0-100), a list of missing critical keywords, a list of successfully matched keywords, and 3 actionable suggestions to improve the resume.`
 
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-3.5-flash'),
       schema: responseSchema,
       system: systemPrompt,
       prompt: `==== JOB DESCRIPTION ====\n${jobDescription}\n\n==== RESUME CONTENT ====\n${resumeContent}\n\nPerform the ATS analysis now.`,

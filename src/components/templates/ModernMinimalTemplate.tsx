@@ -19,6 +19,7 @@ export function ModernMinimalTemplate({ profile, styleConfig }: TemplateProps) {
     updateEducation,
     updateEducationBullet,
     updateProject,
+    updateProjectBulletPoint,
     updateAchievement,
   } = useResumeStore()
 
@@ -110,7 +111,7 @@ export function ModernMinimalTemplate({ profile, styleConfig }: TemplateProps) {
               Projects
             </h2>
             <div className="space-y-2">
-              {profile.projects.map((proj) => (
+              {Array.from(new Map(profile.projects.map(p => [p.id, p])).values()).map((proj) => (
                 <div key={proj.id} className="space-y-0.5">
                   <InlineEditableText
                     value={proj.title}
@@ -123,6 +124,19 @@ export function ModernMinimalTemplate({ profile, styleConfig }: TemplateProps) {
                     onSave={(val) => updateProject(proj.id, { description: val })}
                     className="text-slate-600 text-[11px] block"
                   />
+                  {proj.bullets && proj.bullets.length > 0 && (
+                    <ul className="list-disc space-y-0.5 pl-4 text-slate-700 text-[11px]">
+                      {proj.bullets.map((bullet, bIdx) => (
+                        <li key={bIdx} className="leading-tight">
+                          <InlineEditableText
+                            value={bullet}
+                            multiline
+                            onSave={(val) => updateProjectBulletPoint(proj.id, bIdx, val)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {proj.technologies && proj.technologies.length > 0 && (
                     <div className="text-[10px] text-slate-500 font-mono">
                       {proj.technologies.join(', ')}

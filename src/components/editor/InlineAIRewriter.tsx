@@ -70,10 +70,7 @@ export function InlineAIRewriter({
     }
   }
 
-  React.useEffect(() => {
-    fetchSuggestions('quantify')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Removed auto-fire: user must explicitly select a rephrasing lens to generate suggestions
 
   return (
     <div className="p-4 rounded-md bg-card border border-ink/20 shadow-[3px_4px_0_rgba(42,33,25,0.12)] space-y-3.5 text-xs text-ink w-full max-w-xl">

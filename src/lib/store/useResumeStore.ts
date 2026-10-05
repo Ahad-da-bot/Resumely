@@ -51,6 +51,7 @@ interface ResumeStoreState {
   addWorkExperience: (exp: WorkExperience) => void
   updateWorkExperience: (id: string, exp: Partial<WorkExperience>) => void
   removeWorkExperience: (id: string) => void
+  moveWorkExperience: (id: string, direction: 'up' | 'down') => void
   updateBulletPoint: (
     experienceId: string,
     bulletIndex: number,
@@ -67,6 +68,7 @@ interface ResumeStoreState {
   addEducation: (edu: Education) => void
   updateEducation: (id: string, edu: Partial<Education>) => void
   removeEducation: (id: string) => void
+  moveEducation: (id: string, direction: 'up' | 'down') => void
   addEducationBullet: (educationId: string, text: string) => void
   updateEducationBullet: (
     educationId: string,
@@ -79,20 +81,25 @@ interface ResumeStoreState {
   addProject: (proj: Project) => void
   updateProject: (id: string, proj: Partial<Project>) => void
   removeProject: (id: string) => void
+  moveProject: (id: string, direction: 'up' | 'down') => void
+  addProjectBullet: (projectId: string, text: string) => void
   updateProjectBulletPoint: (
     projectId: string,
     bulletIndex: number,
     newText: string
   ) => void
+  removeProjectBullet: (projectId: string, bulletIndex: number) => void
 
   // Achievements
   addAchievement: (ach: Achievement) => void
   updateAchievement: (id: string, ach: Partial<Achievement>) => void
   removeAchievement: (id: string) => void
+  moveAchievement: (id: string, direction: 'up' | 'down') => void
 
   // Certifications
   addCertification: (cert: Certification) => void
   removeCertification: (id: string) => void
+  moveCertification: (id: string, direction: 'up' | 'down') => void
 }
 
 export const defaultSectionOrder: ResumeSectionKey[] = [
@@ -119,7 +126,7 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
   selectedTemplate: 'craftsman',
   styleConfig: defaultStyleConfig,
   targetJobDescription: '',
-  atsScore: 82,
+  atsScore: 0,
   isSaving: false,
   isGeneratingAI: false,
 
@@ -225,6 +232,29 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
           work_experience: (state.activeProfile.work_experience || []).filter(
             (exp) => exp.id !== id
           ),
+        },
+      }
+    }),
+
+  moveWorkExperience: (id, direction) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      const exps = [...(state.activeProfile.work_experience || [])]
+      const index = exps.findIndex(e => e.id === id)
+      if (index === -1) return state
+      if (direction === 'up' && index > 0) {
+        const temp = exps[index - 1]
+        exps[index - 1] = exps[index]
+        exps[index] = temp
+      } else if (direction === 'down' && index < exps.length - 1) {
+        const temp = exps[index + 1]
+        exps[index + 1] = exps[index]
+        exps[index] = temp
+      }
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          work_experience: exps,
         },
       }
     }),
@@ -338,6 +368,29 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
       }
     }),
 
+  moveEducation: (id, direction) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      const edus = [...(state.activeProfile.education || [])]
+      const index = edus.findIndex(e => e.id === id)
+      if (index === -1) return state
+      if (direction === 'up' && index > 0) {
+        const temp = edus[index - 1]
+        edus[index - 1] = edus[index]
+        edus[index] = temp
+      } else if (direction === 'down' && index < edus.length - 1) {
+        const temp = edus[index + 1]
+        edus[index + 1] = edus[index]
+        edus[index] = temp
+      }
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          education: edus,
+        },
+      }
+    }),
+
   addEducationBullet: (educationId, text) =>
     set((state) => {
       if (!state.activeProfile) return state
@@ -422,6 +475,43 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
       }
     }),
 
+  moveProject: (id, direction) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      const projs = [...(state.activeProfile.projects || [])]
+      const index = projs.findIndex(p => p.id === id)
+      if (index === -1) return state
+      if (direction === 'up' && index > 0) {
+        const temp = projs[index - 1]
+        projs[index - 1] = projs[index]
+        projs[index] = temp
+      } else if (direction === 'down' && index < projs.length - 1) {
+        const temp = projs[index + 1]
+        projs[index + 1] = projs[index]
+        projs[index] = temp
+      }
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          projects: projs,
+        },
+      }
+    }),
+
+  addProjectBullet: (projectId, text) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          projects: (state.activeProfile.projects || []).map((proj) => {
+            if (proj.id !== projectId) return proj
+            return { ...proj, bullets: [...(proj.bullets || []), text] }
+          }),
+        },
+      }
+    }),
+
   updateProjectBulletPoint: (projectId, bulletIndex, newText) =>
     set((state) => {
       if (!state.activeProfile) return state
@@ -432,6 +522,23 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
             if (proj.id !== projectId) return proj
             const updatedBullets = [...(proj.bullets || [])]
             updatedBullets[bulletIndex] = newText
+            return { ...proj, bullets: updatedBullets }
+          }),
+        },
+      }
+    }),
+
+  removeProjectBullet: (projectId, bulletIndex) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          projects: (state.activeProfile.projects || []).map((proj) => {
+            if (proj.id !== projectId) return proj
+            const updatedBullets = (proj.bullets || []).filter(
+              (_, idx) => idx !== bulletIndex
+            )
             return { ...proj, bullets: updatedBullets }
           }),
         },
@@ -475,6 +582,29 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
       }
     }),
 
+  moveAchievement: (id, direction) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      const achs = [...(state.activeProfile.achievements || [])]
+      const index = achs.findIndex(a => a.id === id)
+      if (index === -1) return state
+      if (direction === 'up' && index > 0) {
+        const temp = achs[index - 1]
+        achs[index - 1] = achs[index]
+        achs[index] = temp
+      } else if (direction === 'down' && index < achs.length - 1) {
+        const temp = achs[index + 1]
+        achs[index + 1] = achs[index]
+        achs[index] = temp
+      }
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          achievements: achs,
+        },
+      }
+    }),
+
   addCertification: (cert) =>
     set((state) => {
       if (!state.activeProfile) return state
@@ -495,6 +625,29 @@ export const useResumeStore = create<ResumeStoreState>((set) => ({
           certifications: (state.activeProfile.certifications || []).filter(
             (cert) => cert.id !== id
           ),
+        },
+      }
+    }),
+
+  moveCertification: (id, direction) =>
+    set((state) => {
+      if (!state.activeProfile) return state
+      const certs = [...(state.activeProfile.certifications || [])]
+      const index = certs.findIndex(c => c.id === id)
+      if (index === -1) return state
+      if (direction === 'up' && index > 0) {
+        const temp = certs[index - 1]
+        certs[index - 1] = certs[index]
+        certs[index] = temp
+      } else if (direction === 'down' && index < certs.length - 1) {
+        const temp = certs[index + 1]
+        certs[index + 1] = certs[index]
+        certs[index] = temp
+      }
+      return {
+        activeProfile: {
+          ...state.activeProfile,
+          certifications: certs,
         },
       }
     }),

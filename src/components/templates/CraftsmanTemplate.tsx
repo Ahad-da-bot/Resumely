@@ -23,6 +23,7 @@ export function CraftsmanTemplate({
     updateEducation,
     updateEducationBullet,
     updateProject,
+    updateProjectBulletPoint,
     updateAchievement,
   } = useResumeStore()
 
@@ -143,7 +144,7 @@ export function CraftsmanTemplate({
               Key Projects & Systems
             </h2>
             <div className="grid md:grid-cols-2 gap-3">
-              {profile.projects.map((proj) => (
+              {Array.from(new Map(profile.projects.map(p => [p.id, p])).values()).map((proj) => (
                 <div key={proj.id} className="p-2.5 bg-[#FAF6EC] border border-[#2A2119]/15 rounded-sm space-y-1">
                   <InlineEditableText
                     value={proj.title}
@@ -156,6 +157,21 @@ export function CraftsmanTemplate({
                     onSave={(val) => updateProject(proj.id, { description: val })}
                     className="text-[11px] text-[#6E6355] leading-tight block"
                   />
+                  {proj.bullets && proj.bullets.length > 0 && (
+                    <ul className="list-none space-y-0.5 pl-1 text-[11px] text-[#2A2119]/90">
+                      {proj.bullets.map((bullet, bIdx) => (
+                        <li key={bIdx} className="flex items-start gap-1.5">
+                          <span className="text-oxblood select-none">•</span>
+                          <InlineEditableText
+                            value={bullet}
+                            multiline
+                            onSave={(val) => updateProjectBulletPoint(proj.id, bIdx, val)}
+                            className="flex-1 leading-tight"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {proj.technologies && proj.technologies.length > 0 && (
                     <div className="text-[9px] font-mono text-[#5E6E4F]">
                       {proj.technologies.join(' · ')}
